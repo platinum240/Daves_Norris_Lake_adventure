@@ -61,7 +61,18 @@
     body.touch #ticker { top: 60px; }
     body.touch #joy { width: 120px; height: 120px; } body.touch #tAction { width: 92px; height: 92px; }
   }
-  body.touch #rhythm { bottom: 236px; }
+  /* campfire on touch: sip ring beside the SIP button, event prompt becomes a tappable button off to the left */
+  body.touch #rhythm { left: auto; right: -6px; bottom: 138px; transform: scale(.72); transform-origin: bottom right; }
+  body.touch #eventPrompt { pointer-events: auto; cursor: pointer; left: 10px; right: auto; top: auto; bottom: 178px; transform: none; padding: 8px 12px; width: min(58vw, 230px); background: rgba(8, 28, 46, .7); touch-action: none; }
+  body.touch #evKey { font-size: 1.1rem; padding: 2px 12px; }
+  body.touch #evText { font-size: .72rem; margin-top: 4px; line-height: 1.2; }
+  body.touch #eventPrompt .meter-track { width: 100%; margin-top: 6px; height: 7px; }
+  body.touch.campfire #ticker { opacity: .6; }
+  @media (orientation: portrait) { body.touch.campfire #ticker { bottom: 266px; } }
+  @media (max-height: 500px) {
+    body.touch #rhythm { bottom: 2px; right: 104px; transform: scale(.62); }
+    body.touch #eventPrompt { bottom: 12px; left: 148px; width: min(34vw, 230px); }
+  }
   body.touch #meters { width: 11.5rem; padding: 8px; }
   body.touch .kbd-only { display: none; }
   @media (max-width: 640px) { #danger .danger-badge { font-size: 1rem; } #danger > div:last-child { display: none; } #danger { top: 84px; right: 8px; } #meters { top: 84px; width: 9.5rem !important; padding: 6px 8px !important; } #meters > div > div:first-child { font-size: 9px; margin-bottom: 2px; } #meters .meter-track { height: 8px; } #meters.space-y-2\.5 > * + * { margin-top: 5px; } }
@@ -118,7 +129,7 @@
   <div id="rhythm" class="hidden absolute left-1/2 -translate-x-1/2 bottom-[150px] w-40 h-40">
     <div id="ringTarget" class="ring w-20 h-20 border-4 border-amber-300/90" style="box-shadow:0 0 18px rgba(251,191,36,.6)"></div>
     <div id="ringMove" class="ring w-20 h-20 border-4 border-white/90"></div>
-    <div class="ring text-center font-bungee text-sm leading-tight"><div>🍺</div><div class="key mt-1">SPACE</div></div>
+    <div class="ring text-center font-bungee text-sm leading-tight"><div>🍺</div><div id="ringKey" class="key mt-1">SPACE</div></div>
     <div id="rhythmJudge" class="absolute -top-8 inset-x-0 text-center font-bungee text-xl txt-stroke"></div>
   </div>
   <div id="eventPrompt" class="hidden absolute left-1/2 -translate-x-1/2 top-[30%] panel px-6 py-4 text-center border-amber-400">
@@ -2091,7 +2102,7 @@ const Jetski = {
    ===================================================================== */
 const Campfire = {
   id: 'campfire', short: 'Campfire', title: 'Campfire Beer Balance', tag: 'Night Mode • Rhythm • Balance',
-  icon: '🔥', music: 'waltz', danger: false, timeLimit: 120, action: 'SIP', touchKeys: true, difficulty: true,
+  icon: '🔥', music: 'waltz', danger: false, timeLimit: 120, action: 'SIP', difficulty: true,
   desc: "The sun is down, the fire is crackling, and the whole crew is here. Dave is leaning back in his lawn chair on two legs, because of course he is. Sip on the beat, keep the chair balanced, and survive until the fire burns out.",
   goal: 'Survive 120 seconds without tipping. Every beer makes things… wobblier.',
   controls: [['SPACE', 'Sip when the ring hits the gold circle'], ['A D / ← →', 'Balance left / right'], ['W S / ↑ ↓', 'Lean forward / back'], ['E Q F R', 'React to random events']],
@@ -2128,7 +2139,7 @@ const Campfire = {
     this.davePos = new V3(dx, fy, dz);
     Object.assign(this, { pitch: 0, roll: 0, pv: 0, rv: 0, ix: 0, iy: 0, beers: 0, sip: 0, perfects: 0, beatP: 1.45, beatStart: 2.0, judged: -1, sipAnim: 0, ev: null, evT: rand(8, 12), fallen: false, fallT: 0, done: false, misses: 0 });
     UI.meters([{ id: 'roll', label: 'LEFT ↔ RIGHT', center: true }, { id: 'pitch', label: 'FORWARD ↔ BACK', center: true }, { id: 'beer', label: '🍺 CURRENT BEER', color: '#fbbf24' }, { id: 'dizzy', label: 'DIZZINESS', color: '#e879f9' }]);
-    $('rhythm').classList.remove('hidden');
+    $('rhythm').classList.remove('hidden'); $('ringKey').textContent = Touch.on ? 'SIP ▶' : 'SPACE'; document.body.classList.add('campfire');
     const cp = this.camTarget(); Cam.set(cp.pos, cp.look);
     UI.say('Chad', 'Alright Dave, chair on two legs. Prove it.', true);
   },
@@ -2179,7 +2190,7 @@ const Campfire = {
       if (live && !this.ev && this.evT <= 0) {
         const e = pick([['KeyE', 'E', 'CATCH! Chad tossed you a beer!', 'Chad', 'BONK. Right off the forehead.'], ['KeyQ', 'Q', 'SWAT! Mosquito on your arm!', 'Erin', 'That mosquito is now 40% Bud Light.'], ['KeyF', 'F', 'WAVE! A boat is honking at the fire!', 'Ryan', 'Dave ignored a whole party barge. Rude.'], ['KeyR', 'R', 'ROAST! Zoe needs a marshmallow!', 'Zoe', 'Mr. Dave, my marshmallow is a briquette now.']]);
         const evT = Math.max(1.1, 2 - dz) * D.win; this.ev = { code: e[0], key: e[1], text: e[2], who: e[3], fail: e[4], t: evT, max: evT };
-        $('evKey').textContent = e[1]; $('evText').textContent = e[2]; $('eventPrompt').classList.remove('hidden'); SFX.tone(990, .1, 'square', .1); SFX.tone(990, .1, 'square', .1, 0, .15);
+        $('evKey').textContent = Touch.on ? 'TAP!' : e[1]; $('evText').textContent = e[2]; $('eventPrompt').classList.remove('hidden'); SFX.tone(990, .1, 'square', .1); SFX.tone(990, .1, 'square', .1, 0, .15);
       }
       if (this.ev) {
         this.ev.t -= dt; $('evBar').style.width = clamp(this.ev.t / this.ev.max, 0, 1) * 100 + '%';
@@ -2216,7 +2227,7 @@ const Campfire = {
     this.done = true; Run.add(3000 + this.beers * 200, 'STILL STANDING… SITTING!'); Run.stats = { 'Beers': this.beers, 'Perfect sips': this.perfects, 'Survived': 'The whole night' };
     SFX.cheer(); Flow.end(true, `The fire burned out and Dave is STILL balanced on two chair legs after ${this.beers} beers. A legend is born.`);
   },
-  teardown() { scene.remove(this.g); disposeTree(this.g); fireLight.intensity = 0; $('rhythm').classList.add('hidden'); $('eventPrompt').classList.add('hidden'); UI.dizzy(0); Cam.sway = 0; }
+  teardown() { scene.remove(this.g); disposeTree(this.g); fireLight.intensity = 0; $('rhythm').classList.add('hidden'); $('eventPrompt').classList.add('hidden'); document.body.classList.remove('campfire'); UI.dizzy(0); Cam.sway = 0; }
 };
 
 const MODS = [FuelHaul, CartRally, WakeSurf, Tubing, Jetski, Campfire];
@@ -2346,6 +2357,7 @@ $('muteBtn').onclick = () => { SFX.unlock(); SFX.toggle(); };
 $('musicBtn').onclick = $('pMusic').onclick = () => { SFX.unlock(); Music.toggle(); };
 $('menuFs').onclick = $('hudFs').onclick = $('pFs').onclick = () => FS.toggle();
 $('hudPause').onclick = () => Flow.pause(true);
+$('eventPrompt').addEventListener('pointerdown', e => { e.preventDefault(); if (Flow.mod === Campfire && Campfire.ev) Input.pressed[Campfire.ev.code] = true; });
 $('bSwapX').onclick = $('pSwapX').onclick = () => Flow.mod && Ctl.toggle(Flow.mod.id, 'x');
 $('bSwapY').onclick = $('pSwapY').onclick = () => Flow.mod && Ctl.toggle(Flow.mod.id, 'y');
 document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('button'); if (b) b.blur(); });
